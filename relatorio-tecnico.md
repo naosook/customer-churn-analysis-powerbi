@@ -2,105 +2,232 @@
 
 ## Introdução
 
-Este relatório técnico documenta o desenvolvimento e a estrutura do **Dashboard de Churn e Comportamento do Cliente**, um painel analítico construído em Power BI a partir do dataset público **Telco Customer Churn**, disponibilizado pela IBM através do Kaggle. O documento tem como objetivo registrar, de forma completa e tecnicamente rigorosa, o contexto de negócio, os dados utilizados, a estrutura do dashboard e os insights obtidos, servindo como referência técnica para o repositório de portfólio.
+Este relatório técnico documenta o desenvolvimento e a estrutura do **Dashboard de Churn e Comportamento do Cliente**, um painel analítico desenvolvido em Power BI utilizando o dataset público **Telco Customer Churn**, disponibilizado originalmente pela IBM e distribuído através do Kaggle.
+
+O objetivo deste documento é registrar o contexto de negócio, a origem dos dados, o processo de preparação, a modelagem utilizada, os indicadores desenvolvidos e os principais insights obtidos durante a análise, servindo como documentação técnica do projeto para fins de portfólio.
 
 ## Objetivo do Projeto
 
-Consolidar, em um único painel visual publicado no Power BI, a análise de churn (cancelamento) de clientes de uma empresa de telecomunicações, permitindo a identificação de padrões temporais, contratuais, financeiros e demográficos associados ao cancelamento de serviços.
+Desenvolver um dashboard interativo em Power BI para análise de churn (cancelamento) de clientes de uma empresa de telecomunicações, permitindo identificar padrões relacionados ao comportamento dos clientes, características contratuais, aspectos financeiros e fatores associados ao cancelamento de serviços.
 
 ## Contexto de Negócio
 
-O setor de telecomunicações é caracterizado por alta concorrência e por custos elevados de aquisição de clientes. Nesse cenário, a retenção de clientes existentes é, tipicamente, mais eficiente do ponto de vista financeiro do que a aquisição de novos clientes. Monitorar a taxa de churn e entender seus fatores associados é, portanto, uma prática essencial de gestão para empresas desse setor, com impacto direto sobre receita recorrente e rentabilidade.
+O setor de telecomunicações apresenta alta competitividade e custos significativos relacionados à aquisição de novos clientes. Nesse cenário, a retenção da base existente representa uma estratégia importante para manutenção da receita recorrente.
+
+A análise de churn permite compreender quais características estão relacionadas ao cancelamento de clientes, possibilitando a criação de estratégias de retenção mais direcionadas e baseadas em dados.
 
 ## Problema de Negócio
 
-A empresa fictícia representada pelo dataset enfrenta uma taxa de churn de 26,54% de sua base de clientes. O problema de negócio endereçado por este dashboard é: **como identificar, de forma visual e acessível, os principais fatores associados ao cancelamento de clientes, de modo a orientar ações de retenção mais direcionadas?**
+A empresa fictícia representada pelo dataset apresenta uma taxa de churn de **26,54%** da base de clientes.
 
-## Dataset
+O problema de negócio analisado neste projeto é:
 
-- **Origem:** [Kaggle: blastchar/telco-customer-churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn), com dados originalmente disponibilizados pela IBM (IBM Sample Data Sets).
+**Como identificar os principais fatores associados ao cancelamento de clientes e transformar esses dados em informações visuais que auxiliem na tomada de decisão para ações de retenção?**
+
+# Dataset
+
+- **Origem:** Kaggle, Telco Customer Churn. Dados originalmente disponibilizados pela IBM.
 - **Quantidade de registros:** 7.043 clientes.
-- **Quantidade de atributos:** 21 colunas, incluindo a variável alvo.
-- **Principais colunas:** `customerID`, `gender`, `SeniorCitizen`, `Partner`, `Dependents`, `tenure`, `PhoneService`, `MultipleLines`, `InternetService`, `OnlineSecurity`, `OnlineBackup`, `DeviceProtection`, `TechSupport`, `StreamingTV`, `StreamingMovies`, `Contract`, `PaperlessBilling`, `PaymentMethod`, `MonthlyCharges`, `TotalCharges`, `Churn`.
-- **Variável alvo:** `Churn` (Yes/No): indica se o cliente cancelou o contrato.
-- **Significado das informações:** cada linha representa um cliente único da empresa de telecomunicações, com atributos demográficos (gênero, se é idoso, se possui parceiro/dependentes), atributos contratuais (tipo de contrato, tempo de permanência, forma de pagamento), atributos de serviços contratados (internet, linhas telefônicas, segurança online, backup, streaming) e atributos financeiros (cobrança mensal e total).
-- **Qualidade dos dados:** conforme amplamente documentado na literatura pública sobre este dataset, a coluna `TotalCharges` é originalmente armazenada como texto e contém um pequeno número de valores em branco, associados a clientes com `tenure = 0`. Não há relatos, na documentação oficial, de duplicidade de identificadores de cliente. O tratamento específico de qualidade de dados realizado neste projeto (se houve remoção de valores nulos, conversões de tipo, etc.) **não é visível a partir do dashboard publicado** e é discutido de forma mais detalhada na seção de ETL, abaixo.
+- **Quantidade de atributos:** 21 colunas.
+- **Variável alvo:** `Churn` (Yes/No), indicando se o cliente cancelou o serviço.
 
-## Processo de ETL
+Principais atributos utilizados:
 
-> **Limitação identificada:** o processo de ETL (Extração, Transformação e Carga) não pode ser totalmente reconstruído apenas a partir do dashboard publicado e das imagens das páginas, pois essas etapas ocorrem no Power Query, cuja visualização exige acesso ao arquivo `.pbix` original. As observações abaixo combinam evidências indiretas (nomenclaturas e categorias visíveis no relatório) com boas práticas usuais do mercado para dados dessa natureza.
+- **Identificação:** `customerID`
+- **Dados demográficos:** `gender`, `SeniorCitizen`, `Partner`, `Dependents`
+- **Relacionamento com a empresa:** `tenure`
+- **Serviços contratados:** `PhoneService`, `MultipleLines`, `InternetService`, `OnlineSecurity`, `OnlineBackup`, `DeviceProtection`, `TechSupport`, `StreamingTV`, `StreamingMovies`
+- **Contrato e pagamento:** `Contract`, `PaperlessBilling`, `PaymentMethod`
+- **Dados financeiros:** `MonthlyCharges`, `TotalCharges`
 
-- **Importação:** os dados foram, muito provavelmente, importados diretamente do arquivo CSV oficial do Kaggle (`WA_Fn-UseC_-Telco-Customer-Churn.csv`) para o Power BI via Power Query.
-- **Limpeza:** não é possível confirmar, a partir do dashboard, se houve tratamento de valores nulos na coluna `TotalCharges` (documentadamente presente no dataset original). Trata-se de uma etapa esperada, mas não verificável externamente.
-- **Transformação/Padronização:** há evidência clara, nas categorias exibidas no dashboard, de que os valores de diversas colunas categóricas foram **traduzidos do inglês para o português**, incluindo: tipo de contrato ("Sem fidelidade (mensal)", "Fidelidade de 1 ano", "Fidelidade de 2 anos"), forma de pagamento ("Cheque eletrônico", "Cheque enviado pelo correio", "Transferência bancária", "Cartão de crédito"), gênero ("Homem"/"Mulher") e a variável alvo ("Sim"/"Não" para "Cancelou o Contrato?"). Essa tradução pode ter sido implementada via Power Query (substituição de valores) ou via tabela de mapeamento/DAX.
-- **Criação de colunas:** há evidência de uma coluna calculada de agrupamento de tempo de contrato ("0-6 meses", "7-12 meses", "13-24 meses", "25+ meses"), derivada da coluna numérica `tenure` do dataset original. Essa é a única coluna derivada identificável com segurança a partir das visualizações do dashboard.
-- **Conversões:** não é possível confirmar conversões de tipo específicas (ex.: texto para número em `TotalCharges`) apenas pelo dashboard publicado.
-- **Modelagem:** discutida a seguir, na seção "Modelagem dos Dados".
+Cada linha representa um cliente individual contendo informações sobre perfil, serviços utilizados, contrato, valores financeiros e status de cancelamento.
 
-## Modelagem dos Dados
+# Processo de ETL
 
-A modelagem de dados exata não pôde ser confirmada a partir das fontes disponíveis para este projeto de documentação, já que essa informação só é visível na visão de "Modelo" do arquivo `.pbix` original. Uma estrutura hipotética, composta provavelmente por uma tabela fato única (refletindo a estrutura de arquivo único do dataset de origem) com uma coluna calculada de faixas de tempo de contrato, é a hipótese mais consistente com o que é observável nas visualizações do dashboard.
+O processo de ETL foi realizado utilizando o **Power Query dentro do Power BI**, envolvendo a importação, preparação e transformação dos dados antes da criação das visualizações.
 
-## KPIs
+## Extração
 
-Os quatro indicadores a seguir são exibidos de forma fixa no cabeçalho de todas as páginas do dashboard:
+Os dados foram importados a partir do arquivo CSV disponibilizado pelo Kaggle, contendo informações históricas dos clientes da empresa de telecomunicações.
 
-### Clientes Totais (7.043)
-- **Definição:** contagem total de clientes únicos na base de dados.
-- **Objetivo:** fornecer o tamanho absoluto da base analisada, dando contexto de escala aos demais indicadores.
-- **Interpretação:** corresponde exatamente ao total de registros do dataset oficial (7.043 linhas), o que indica que o dashboard trabalha com a base completa, sem filtragem de amostra.
-- **Importância para o negócio:** dimensiona o universo de clientes sobre o qual as demais métricas (churn, retenção, ticket médio) são calculadas.
+## Transformação
 
-### Taxa de Churn (26,54%)
-- **Definição:** percentual de clientes que cancelaram o contrato em relação ao total da base.
-- **Objetivo:** medir a intensidade do problema de cancelamento na base de clientes.
-- **Interpretação:** aproximadamente 1 em cada 4 clientes da base analisada cancelou o serviço.
-- **Importância para o negócio:** é o indicador central do problema de negócio abordado pelo dashboard: orienta diretamente a priorização de ações de retenção.
+Durante a preparação dos dados foram realizadas etapas de organização e padronização para adequação da análise:
 
-### Taxa de Retenção (73,46%)
-- **Definição:** percentual de clientes que permanecem ativos (complemento da taxa de churn).
-- **Objetivo:** oferecer a visão inversa e complementar à taxa de churn, facilitando a leitura em termos de "sucesso" de retenção.
-- **Interpretação:** cerca de 73,46% da base permanece ativa, valor que somado à taxa de churn totaliza 100% da base.
-- **Importância para o negócio:** serve como métrica de acompanhamento de metas de retenção ao longo do tempo.
+- Verificação da estrutura das colunas.
+- Ajuste dos tipos de dados.
+- Organização dos campos utilizados nas análises.
+- Padronização de categorias para facilitar a interpretação dos gráficos.
+- Tradução de valores categóricos do inglês para português.
 
-### Ticket Médio (R$ 3,52 Mil)
-- **Definição:** valor médio de cobrança por cliente (a base de cálculo específica, cobrança mensal ou total, não pôde ser confirmada apenas pelo dashboard).
-- **Objetivo:** dimensionar o valor financeiro médio associado a cada cliente da base.
-- **Interpretação:** fornece uma referência de valor médio por cliente, útil para estimar o impacto financeiro do churn (ex.: perda de receita associada aos clientes cancelados).
-- **Importância para o negócio:** conecta a análise de churn a uma perspectiva financeira, permitindo estimar o impacto em receita de cada ponto percentual de churn reduzido ou aumentado.
+Entre as padronizações realizadas estão:
 
-## Dashboard
+- Tipo de contrato.
+- Forma de pagamento.
+- Gênero.
+- Status de cancelamento.
 
-O relatório é composto por 4 páginas. A descrição completa de cada uma (objetivo, indicadores, gráficos, filtros e interpretação) está documentada em detalhe em [`DASHBOARD.md`](DASHBOARD.md). Em síntese:
+Também foi criada uma classificação baseada no tempo de relacionamento do cliente (`tenure`), agrupando os clientes nas seguintes faixas:
 
-![Página 1 - Churn](imagens/pagina-1.jpeg)
+- 0 a 6 meses.
+- 7 a 12 meses.
+- 13 a 24 meses.
+- 25 meses ou mais.
 
-- **Página Churn:** analisa o risco de cancelamento ao longo do tempo de contrato, com dois gráficos (churn por faixa de tenure; evolução do churn ao longo do tempo).
+Essa transformação permitiu analisar o comportamento do churn ao longo do ciclo de vida do cliente.
 
-![Página 2 - Impacto](imagens/pagina-2.jpeg)
+## Carga
 
-- **Página Impacto:** relaciona serviços contratados (backup online) e tempo de contrato ao comportamento de cancelamento.
+Após o tratamento dos dados, a base foi utilizada dentro do Power BI para criação das medidas, indicadores e visualizações do dashboard.
 
-![Página 3 - Financeiro](imagens/pagina-3.jpeg)
+# Modelagem dos Dados
 
-- **Página Financeiro:** analisa o impacto de formas de pagamento e tipo de internet na receita e no churn.
+A modelagem desenvolvida no Power BI utiliza uma abordagem de **tabela única**, baseada diretamente no dataset original.
 
-![Página 4 - Perfil](imagens/pagina-4.jpeg)
+Essa estrutura foi adequada para o objetivo do projeto, pois a base já apresenta todas as informações necessárias para análise exploratória e construção dos indicadores de churn.
 
-- **Página Perfil:** segmenta a base por tipo de contrato e por gênero.
+A tabela utilizada contém:
 
-## Principais Insights
+- **Identificação do cliente:** `customerID`
+- **Características demográficas:** `gender`, `SeniorCitizen`, `Partner`, `Dependents`
+- **Tempo de relacionamento:** `tenure`
+- **Serviços contratados:** `PhoneService`, `InternetService`, `OnlineSecurity`, `OnlineBackup`, `DeviceProtection`, `TechSupport`, `StreamingTV`, `StreamingMovies`
+- **Informações contratuais:** `Contract`, `PaperlessBilling`, `PaymentMethod`
+- **Indicadores financeiros:** `MonthlyCharges`, `TotalCharges`
+- **Variável analisada:** `Churn`
 
-A partir do que foi observado nos títulos e valores das visualizações do dashboard, destacam-se os seguintes insights:
+Durante o desenvolvimento do dashboard, foi utilizada uma classificação derivada da coluna `tenure`, agrupando os clientes em faixas de tempo de relacionamento:
 
-- O risco de churn é significativamente maior nos primeiros meses de contrato, concentrando a maior parte dos cancelamentos no primeiro ano de relacionamento.
-- Serviços adicionais (como backup online) e determinadas formas de pagamento (como cartão de crédito) estão associados a menor churn, segundo os títulos dos gráficos do dashboard.
-- Contratos mensais concentram a maioria da base de clientes e apresentam maior churn relativo em comparação a contratos anuais/bianuais.
-- A base de clientes de fibra óptica representa uma parcela maior de receita em comparação à base de clientes DSL.
-- Observa-se uma diferença de retenção entre gêneros especificamente no segmento de contratos anuais, segundo o título de um dos gráficos, ainda que a distribuição geral de gênero na base seja praticamente equilibrada.
+- 0 a 6 meses.
+- 7 a 12 meses.
+- 13 a 24 meses.
+- 25 meses ou mais.
 
-## Conclusão
+Essa categorização permitiu uma análise mais clara do comportamento de cancelamento ao longo do ciclo de vida do cliente.
 
-O Dashboard de Churn e Comportamento do Cliente consolida, de forma visual e direta, os principais fatores associados ao cancelamento de clientes em uma base de telecomunicações, utilizando como fonte o dataset público Telco Customer Churn (IBM/Kaggle). A estrutura em quatro páginas (Churn, Impacto, Financeiro e Perfil) permite uma leitura progressiva do problema de negócio: primeiro identificando *quando* o churn ocorre, depois *quais fatores* estão associados a ele, em seguida *qual o impacto financeiro* envolvido, e por fim *qual o perfil* dos clientes mais suscetíveis ao cancelamento.
+Para este projeto, a utilização de uma tabela única atende ao objetivo analítico proposto, considerando que a base possui uma estrutura consolidada e o foco principal é a análise exploratória e visualização de indicadores de negócio.
 
-Do ponto de vista técnico, este projeto evidencia boas práticas de comunicação de dados, como o uso de títulos de gráficos como conclusões diretas de negócio e a manutenção de KPIs fixos e consistentes em todas as páginas do relatório. As limitações identificadas, relacionadas à ausência de acesso ao arquivo `.pbix` original para validação de ETL, modelagem e medidas DAX, foram registradas de forma explícita ao longo deste relatório e dos demais documentos do repositório, em conformidade com o princípio de não inferir informações que não possam ser diretamente observadas ou razoavelmente hipotetizadas a partir das fontes disponíveis.
+Em ambientes corporativos com múltiplas fontes de dados, maior volume e necessidade de análises históricas, uma evolução possível seria a implementação de um modelo dimensional (**Star Schema**), utilizando tabelas fato e dimensões para melhorar escalabilidade, organização e manutenção do modelo.
+
+# KPIs
+
+Os principais indicadores desenvolvidos no dashboard são exibidos no cabeçalho das páginas para fornecer uma visão geral da base analisada.
+
+## Clientes Totais (7.043)
+
+**Definição:** quantidade total de clientes analisados na base de dados.
+
+**Objetivo:** apresentar o tamanho da carteira de clientes avaliada.
+
+**Interpretação:** representa todos os registros disponíveis no dataset utilizado no projeto.
+
+**Importância para o negócio:** fornece o contexto necessário para interpretação dos demais indicadores, como churn e retenção.
+
+## Taxa de Churn (26,54%)
+
+**Definição:** percentual de clientes que cancelaram o serviço em relação ao total da base.
+
+**Objetivo:** medir o nível de cancelamento existente na carteira de clientes.
+
+**Interpretação:** aproximadamente um quarto dos clientes analisados deixou de utilizar os serviços da empresa.
+
+**Importância para o negócio:** representa o principal indicador do problema analisado, auxiliando na identificação de oportunidades de retenção.
+
+## Taxa de Retenção (73,46%)
+
+**Definição:** percentual de clientes que permaneceram ativos na base.
+
+**Objetivo:** apresentar a parcela de clientes mantidos pela empresa.
+
+**Interpretação:** representa os clientes que continuam utilizando os serviços em comparação ao total analisado.
+
+**Importância para o negócio:** permite acompanhar o equilíbrio entre retenção e perda de clientes.
+
+## Ticket Médio (R$ 3,52 Mil)
+
+**Definição:** valor médio financeiro associado aos clientes analisados.
+
+**Objetivo:** relacionar a análise de churn ao impacto financeiro da perda de clientes.
+
+**Interpretação:** permite compreender o valor médio associado à carteira de clientes analisada.
+
+**Importância para o negócio:** conecta a análise comportamental dos clientes com uma perspectiva financeira, auxiliando na avaliação do impacto causado pelo cancelamento.
+
+# Dashboard
+
+O relatório é composto por quatro páginas analíticas, desenvolvidas com objetivos específicos para facilitar a interpretação dos padrões de churn e do comportamento dos clientes.
+
+A descrição detalhada de cada página, incluindo objetivos, indicadores, gráficos, filtros e interpretações, está documentada em [`DASHBOARD.md`](DASHBOARD.md).
+
+## Página 1: Churn
+
+![Página 1: Churn](imagens/pagina-1.jpeg)
+
+Esta página apresenta uma visão geral do comportamento de cancelamento dos clientes, analisando principalmente a relação entre tempo de relacionamento e taxa de churn.
+
+Principais análises:
+
+- Churn por faixa de permanência (`tenure`).
+- Identificação dos períodos com maior concentração de cancelamentos.
+- Análise do comportamento do cliente ao longo do ciclo de relacionamento.
+
+## Página 2: Impacto
+
+![Página 2: Impacto](imagens/pagina-2.jpeg)
+
+Esta página analisa fatores relacionados aos serviços contratados e sua relação com o cancelamento dos clientes.
+
+Principais análises:
+
+- Relação entre serviços adicionais e taxa de churn.
+- Comparação do comportamento dos clientes conforme características dos serviços utilizados.
+- Identificação de fatores associados à retenção ou perda de clientes.
+
+## Página 3: Financeiro
+
+![Página 3: Financeiro](imagens/pagina-3.jpeg)
+
+Esta página apresenta uma análise dos aspectos financeiros e contratuais relacionados ao comportamento dos clientes, buscando compreender como características de pagamento e serviços influenciam o cancelamento.
+
+Principais análises:
+
+- Distribuição dos clientes por forma de pagamento.
+- Relação entre tipo de contrato e taxa de churn.
+- Comparação dos indicadores financeiros da base analisada.
+- Avaliação do impacto financeiro relacionado ao comportamento dos clientes.
+
+## Página 4: Perfil
+
+![Página 4: Perfil](imagens/pagina-4.jpeg)
+
+Esta página apresenta uma segmentação do perfil dos clientes, permitindo analisar diferenças entre grupos da base.
+
+Principais análises:
+
+- Distribuição dos clientes por características demográficas.
+- Comparação entre tipos de contrato.
+- Análise do comportamento de churn entre diferentes segmentos de clientes.
+
+# Principais Insights
+
+A análise realizada através do dashboard identificou os seguintes padrões relacionados ao comportamento dos clientes:
+
+- Clientes nos primeiros meses de relacionamento apresentam maior concentração de cancelamentos, indicando maior risco durante o início do ciclo de vida.
+
+- Contratos mensais apresentam maior taxa de churn quando comparados a contratos de maior duração, indicando uma relação entre fidelização contratual e retenção.
+
+- Clientes com contratos de maior duração apresentam maior permanência na base, demonstrando maior estabilidade no relacionamento com a empresa.
+
+- Características relacionadas aos serviços contratados apresentam diferenças no comportamento de cancelamento, permitindo identificar grupos com maior ou menor risco de churn.
+
+- A análise financeira permite relacionar o comportamento dos clientes ao impacto econômico causado pela perda de receita associada aos cancelamentos.
+
+# Conclusão
+
+O Dashboard de Churn e Comportamento do Cliente apresenta uma análise completa dos principais fatores associados ao cancelamento de clientes em uma empresa de telecomunicações.
+
+O projeto demonstra a aplicação prática de conceitos de análise de dados utilizando Power BI, incluindo preparação de dados, transformação de informações, criação de indicadores, modelagem, construção de visualizações e interpretação de resultados de negócio.
+
+A organização do dashboard em quatro perspectivas, Churn, Impacto, Financeiro e Perfil, permite uma análise progressiva do problema, começando pela identificação dos padrões de cancelamento, passando pela análise dos fatores associados ao comportamento dos clientes e chegando à compreensão do impacto financeiro envolvido.
+
+Este projeto evidencia a capacidade de transformar dados brutos em informações estratégicas para apoio à tomada de decisão, utilizando ferramentas de Business Intelligence e boas práticas de comunicação visual de dados.
