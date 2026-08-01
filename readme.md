@@ -60,7 +60,7 @@ O dashboard responde a perguntas de negócio como:
 
 ## Processo de Preparação dos Dados
 
-> **Observação:** o processo de ETL não é totalmente visível apenas a partir do dashboard publicado e das imagens das páginas. As informações abaixo combinam o que é **observável no dashboard** com **hipóteses razoáveis** baseadas em boas práticas de modelagem em Power BI. Consulte [`docs/RELATORIO_TECNICO.md`](docs/RELATORIO_TECNICO.md) para o detalhamento completo dessa distinção.
+> **Observação:** o processo de ETL não é totalmente visível apenas a partir do dashboard publicado e das imagens das páginas. As informações abaixo combinam o que é **observável no dashboard** com **hipóteses razoáveis** baseadas em boas práticas de modelagem em Power BI. Consulte [`relatorio-tecnico.md`](relatorio-tecnico.md) para o detalhamento completo dessa distinção.
 
 Observações identificáveis no dashboard:
 - Os rótulos de colunas e categorias foram **traduzidos para o português** (ex.: "Tipo de Contrato" com valores "Sem fidelidade (mensal)", "Fidelidade de 1 ano", "Fidelidade de 2 anos"; "Cancelou o Contrato?" com valores "Sim"/"Não"; formas de pagamento como "Cheque eletrônico", "Transferência bancária"), o que indica uma etapa de renomeação/tradução de valores originalmente em inglês no dataset.
